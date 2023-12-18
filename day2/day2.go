@@ -22,39 +22,37 @@ func main() {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	ans := int(0)
+	ans := int64(0)
 
 	for scanner.Scan() {
 		line := scanner.Text()
 		game := strings.Split(line, ":")
 		colors := strings.FieldsFunc(game[1], Split)
-		rgbMap := make(map[byte]int)
-		invalid := false
+		r, g, b := -1, -1, -1
 
 		for _, item := range colors {
 			v := strings.Split(item, " ")
 			// fmt.Println(v[1], v[2])
 			val, _ := strconv.Atoi(v[1])
-			if (v[2][0] == 'r' && val > 12) || (v[2][0] == 'g' && val > 13) || (v[2][0] == 'b' && val > 14) {
-				invalid = true
-				break
+			if v[2][0] == 'r' {
+				r = max(r, val)
 			}
-			// rgbMap[v[2][0]] += val
+			if v[2][0] == 'g' {
+				g = max(g, val)
+			}
+			if v[2][0] == 'b' {
+				b = max(b, val)
+			}
 		}
 
-		fmt.Println(rgbMap)
+		ans += (int64(r) * int64(g) * int64(b))
 
-		if invalid {
-			fmt.Println("--------------------------------")
-			continue
-		}
-
-		gameid := strings.Split(game[0], " ")
-		fmt.Println(gameid[1])
-		id, _ := strconv.Atoi(gameid[1])
-		fmt.Printf("gameId = %d\n", id)
-		ans += int(id)
-		fmt.Println("--------------------------------")
+		// gameid := strings.Split(game[0], " ")
+		// fmt.Println(gameid[1])
+		// id, _ := strconv.Atoi(gameid[1])
+		// fmt.Printf("gameId = %d\n", id)
+		// ans += int(id)
+		// fmt.Println("--------------------------------")
 	}
 
 	fmt.Printf("ans = %d", ans)
