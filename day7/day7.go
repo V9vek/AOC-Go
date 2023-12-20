@@ -11,6 +11,11 @@ import (
 	"strings"
 )
 
+type Pair struct {
+	first  rune
+	second int64
+}
+
 func main() {
 	file, err := os.Open("./input.txt")
 
@@ -28,12 +33,54 @@ func main() {
 		mpCardBid[mappings[0]] = getInt(mappings[1])
 	}
 
+	ranking := getLabelRanking()
 	mpRankCard := map[int64][]string{}
 	for card := range mpCardBid {
-		mpLabelCount := make(map[rune]int)
-		for _, label := range card {
-			mpLabelCount[label]++
+		if card == "JJJJJ" {
+			mpRankCard[7] = append(mpRankCard[7], card)
+			continue
 		}
+
+		mpLabelCount := make(map[rune]int)
+
+		for _, label := range card {
+			if label != 'J' {
+				mpLabelCount[label]++
+			}
+		}
+
+		// part 2
+		labelCountSlice := []Pair{}
+		for label, count := range mpLabelCount {
+			labelCountSlice = append(labelCountSlice, Pair{label, int64(count)})
+		}
+
+		sort.Slice(labelCountSlice, func(i, j int) bool {
+			if labelCountSlice[i].second == labelCountSlice[j].second {
+				return ranking[labelCountSlice[i].first] > ranking[labelCountSlice[j].first]
+			}
+			return labelCountSlice[i].second > labelCountSlice[j].second
+		})
+
+		// fmt.Println("labelCountSlice =", labelCountSlice)
+		if strings.Contains(card, "J") {
+			newCard := ""
+			for i := 0; i < len(card); i++ {
+				if card[i] == 'J' {
+					newCard += string(labelCountSlice[0].first)
+				} else {
+					newCard += string(card[i])
+				}
+			}
+			// fmt.Println("new card =", newCard)
+			clear(mpLabelCount)
+			for _, label := range newCard {
+				mpLabelCount[label]++
+			}
+		}
+
+		//
+		// fmt.Println(mpLabelCount)
 
 		switch len(mpLabelCount) {
 		case 1:
@@ -99,7 +146,7 @@ func main() {
 		}
 	}
 
-	fmt.Println(rankCardSlice)
+	// fmt.Println(rankCardSlice)
 	// fmt.Println(mpRankCard)
 	fmt.Println(score)
 
@@ -114,22 +161,26 @@ func main() {
 	*/
 }
 
-func cardCondition(card1 string, card2 string) bool {
+func getLabelRanking() map[rune]int {
 	ranking := map[rune]int{}
 	ranking['A'] = 13
 	ranking['K'] = 12
 	ranking['Q'] = 11
-	ranking['J'] = 10
-	ranking['T'] = 9
-	ranking['9'] = 8
-	ranking['8'] = 7
-	ranking['7'] = 6
-	ranking['6'] = 5
-	ranking['5'] = 4
-	ranking['4'] = 3
-	ranking['3'] = 2
-	ranking['2'] = 1
+	ranking['T'] = 10
+	ranking['9'] = 9
+	ranking['8'] = 8
+	ranking['7'] = 7
+	ranking['6'] = 6
+	ranking['5'] = 5
+	ranking['4'] = 4
+	ranking['3'] = 3
+	ranking['2'] = 2
+	ranking['J'] = 1
+	return ranking
+}
 
+func cardCondition(card1 string, card2 string) bool {
+	ranking := getLabelRanking()
 	for i := 0; i < 5; i++ {
 		if card1[i] != card2[i] {
 			return ranking[rune(card1[i])] < ranking[rune(card2[i])]
