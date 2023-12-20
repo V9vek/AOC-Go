@@ -72,59 +72,61 @@ func main() {
 	}
 
 	ans := int64(math.MaxInt64)
-	for _, seed := range seeds {
-		loc := seed
-		for _, row := range ss {
-			if loc <= (row[1]+row[2]) && loc >= row[1] {
-				loc += (row[0] - row[1])
-				break
+	for i := 0; i < len(seeds); i += 2 {
+		for j := seeds[i]; j < (seeds[i] + seeds[i+1]); j++ {
+			loc := j
+			for _, row := range ss {
+				if loc <= (row[1]+row[2]-1) && loc >= row[1] {
+					loc += (row[0] - row[1])
+					break
+				}
 			}
-		}
-		// fmt.Println(loc)
-		for _, row := range sf {
-			if loc <= (row[1]+row[2]) && loc >= row[1] {
-				loc += (row[0] - row[1])
-				break
+			// fmt.Println(loc)
+			for _, row := range sf {
+				if loc <= (row[1]+row[2]-1) && loc >= row[1] {
+					loc += (row[0] - row[1])
+					break
+				}
 			}
-		}
-		// fmt.Println(loc)
-		for _, row := range fw {
-			if loc <= (row[1]+row[2]) && loc >= row[1] {
-				loc += (row[0] - row[1])
-				break
+			// fmt.Println(loc)
+			for _, row := range fw {
+				if loc <= (row[1]+row[2]-1) && loc >= row[1] {
+					loc += (row[0] - row[1])
+					break
+				}
 			}
-		}
-		// fmt.Println(loc)
-		for _, row := range wl {
-			if loc <= (row[1]+row[2]) && loc >= row[1] {
-				loc += (row[0] - row[1])
-				break
+			// fmt.Println(loc)
+			for _, row := range wl {
+				if loc <= (row[1]+row[2]-1) && loc >= row[1] {
+					loc += (row[0] - row[1])
+					break
+				}
 			}
-		}
-		// fmt.Println(loc)
-		for _, row := range lt {
-			if loc <= (row[1]+row[2]) && loc >= row[1] {
-				loc += (row[0] - row[1])
-				break
+			// fmt.Println(loc)
+			for _, row := range lt {
+				if loc <= (row[1]+row[2]-1) && loc >= row[1] {
+					loc += (row[0] - row[1])
+					break
+				}
 			}
-		}
-		// fmt.Println(loc)
-		for _, row := range th {
-			if loc <= (row[1]+row[2]) && loc >= row[1] {
-				loc += (row[0] - row[1])
-				break
+			// fmt.Println(loc)
+			for _, row := range th {
+				if loc <= (row[1]+row[2]-1) && loc >= row[1] {
+					loc += (row[0] - row[1])
+					break
+				}
 			}
-		}
-		// fmt.Println(loc)
-		for _, row := range hl {
-			if loc <= (row[1]+row[2]) && loc >= row[1] {
-				loc += (row[0] - row[1])
-				break
+			// fmt.Println(loc)
+			for _, row := range hl {
+				if loc <= (row[1]+row[2]-1) && loc >= row[1] {
+					loc += (row[0] - row[1])
+					break
+				}
 			}
-		}
 
-		fmt.Printf("seed = %d loc = %d\n", seed, loc)
-		ans = min(ans, loc)
+			// fmt.Printf("seed = %d loc = %d\n", seed, loc)
+			ans = min(ans, loc)
+		}
 	}
 
 	fmt.Printf("ans = %d", ans)
