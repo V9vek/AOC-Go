@@ -19,34 +19,42 @@ func main() {
 
 	scanner := bufio.NewScanner(file)
 
-	tim := []int{}
-	dst := []int{}
+	tim := int64(0)
+	dst := int64(0)
 	for scanner.Scan() {
 		line := scanner.Text()
 		splits := strings.Split(line, ":")
 		if splits[0] == "Time" {
-			tim = getInts(strings.Fields(splits[1]))
+			tim = getInt(strings.ReplaceAll(splits[1], " ", ""))
 		}
 		if splits[0] == "Distance" {
-			dst = getInts(strings.Fields(splits[1]))
+			dst = getInt(strings.ReplaceAll(splits[1], " ", ""))
 		}
 	}
 	// fmt.Println(tim)
 	// fmt.Println(dst)
 
-	score := 1
-	for i := 0; i < len(tim); i++ {
-		cnt := 0
-		for j := 1; j <= tim[i]; j++ {
-			newDst := j * (tim[i] - j)
-			if newDst > dst[i] {
-				cnt++
-			}
+	score := int64(0)
+	for i := int64(1); i <= tim/2; i++ {
+		newDst := i * (tim - i)
+		if newDst > dst {
+			score++
 		}
-		score *= cnt
 	}
 
+	score *= 2
+	if score%2 == 0 {
+		score--
+	}
 	fmt.Printf("%v", score)
+}
+
+func getInt(str string) int64 {
+	val, err := strconv.Atoi(str)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return int64(val)
 }
 
 func getInts(strs []string) []int {
