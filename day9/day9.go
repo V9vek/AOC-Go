@@ -25,25 +25,20 @@ func main() {
 
 		history := getInts(line)
 
-		// 1 3 6 10 15 21
-		// 2 3 4 5 6 21
-		// 1 1 1 1 6 21
-		// 0 0 0 1 6 21
-
 		k := 0
 		for {
-			for i := 1; i < len(history)-k; i++ {
-				history[i-1] = history[i] - history[i-1]
+			for i := len(history) - 1; i > k; i-- {
+				history[i] = history[i] - history[i-1]
 			}
 			k++
-			if allEqual(history, len(history)-k) {
+			if allEqual(history, k) {
 				break
 			}
 		}
 
 		prediction := int64(0)
-		for i := len(history) - 1; i >= len(history)-k-1; i-- {
-			prediction += history[i]
+		for i := k; i >= 0; i-- {
+			prediction = history[i] - prediction
 		}
 		score += prediction
 	}
@@ -52,8 +47,8 @@ func main() {
 }
 
 func allEqual(arr []int64, length int) bool {
-	for i := 1; i < length; i++ {
-		if arr[i-1] != arr[i] {
+	for i := len(arr) - 1; i > length; i-- {
+		if arr[i] != arr[i-1] {
 			return false
 		}
 	}
