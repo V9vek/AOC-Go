@@ -1,240 +1,191 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
+	"math"
 	"os"
+	"slices"
+	"strconv"
 	"strings"
 )
 
-type Tuple struct {
-	x, y, val int
+type Direction string
+
+const (
+	left  Direction = "left"
+	right Direction = "right"
+	up    Direction = "up"
+	down  Direction = "down"
+)
+
+var tileGrid [][]*Tile
+
+type Tile struct {
+	x             int
+	y             int
+	char          string
+	key           string
+	outDirections []Direction
+	inDirections  []Direction
 }
 
-func enqueue(queue []Tuple, element Tuple) []Tuple {
-	queue = append(queue, element) // Simply append to enqueue.
-	// fmt.Println("Enqueued:", element)
-	return queue
+func NewTile(x, y int, char string) *Tile {
+	tile := &Tile{
+		x:    x,
+		y:    y,
+		char: char,
+		key:  strconv.Itoa(x) + strconv.Itoa(y),
+	}
+	tile.calculateDirections()
+	return tile
 }
-func dequeue(queue []Tuple) (Tuple, []Tuple) {
-	element := queue[0] // The first element is the one to be dequeued.
-	// fmt.Println("Dequeued:", element)
-	return element, queue[1:] // Slice off the element once it is dequeued.
+
+func (t *Tile) calculateDirections() {
+	switch t.char {
+	case "|":
+		t.outDirections = []Direction{up, down}
+		t.inDirections = []Direction{down, up}
+	case "-":
+		t.outDirections = []Direction{left, right}
+		t.inDirections = []Direction{right, left}
+	case "L":
+		t.outDirections = []Direction{up, right}
+		t.inDirections = []Direction{down, left}
+	case "J":
+		t.outDirections = []Direction{up, left}
+		t.inDirections = []Direction{down, right}
+	case "7":
+		t.outDirections = []Direction{down, left}
+		t.inDirections = []Direction{up, right}
+	case "F":
+		t.outDirections = []Direction{down, right}
+		t.inDirections = []Direction{up, left}
+	case ".":
+		t.outDirections = []Direction{}
+		t.inDirections = []Direction{}
+	case "S":
+		t.outDirections = []Direction{up, down, left, right}
+		t.inDirections = []Direction{up, down, left, right}
+
+	}
+}
+
+func isInBounds(x, y int) bool {
+	return x < len(tileGrid) && y < len(tileGrid[x]) && x >= 0 && y >= 0
+}
+
+func findNeighbours(tile *Tile) []*Tile {
+	var neighbours []*Tile
+
+	if tile.x == 34 && tile.y == 138 {
+		println("Here")
+	}
+
+	for _, direction := range tile.outDirections {
+		switch direction {
+		case down:
+			if isInBounds(tile.x-1, tile.y) {
+				tileT := tileGrid[tile.x-1][tile.y]
+				if slices.Contains(tileT.inDirections, down) {
+					neighbours = append(neighbours, tileT)
+				}
+			}
+		case up:
+			if isInBounds(tile.x+1, tile.y) {
+				tileT := tileGrid[tile.x+1][tile.y]
+				if slices.Contains(tileT.inDirections, up) {
+					neighbours = append(neighbours, tileT)
+				}
+			}
+		case left:
+			if isInBounds(tile.x, tile.y-1) {
+				tileT := tileGrid[tile.x][tile.y-1]
+				if slices.Contains(tileT.inDirections, left) {
+					neighbours = append(neighbours, tileT)
+				}
+			}
+		case right:
+			if isInBounds(tile.x, tile.y+1) {
+				tileT := tileGrid[tile.x][tile.y+1]
+				if slices.Contains(tileT.inDirections, right) {
+					neighbours = append(neighbours, tileT)
+				}
+			}
+		}
+	}
+
+	return neighbours
+
 }
 
 func main() {
-	file, err := os.Open("./input.txt")
-
+	b, err := os.ReadFile("input.txt")
 	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-
-	matrix := [][]string{}
-	for scanner.Scan() {
-		line := scanner.Text()
-		temp := []string{}
-		for _, r := range line {
-			temp = append(temp, string(r))
-		}
-		matrix = append(matrix, temp)
+		fmt.Print(err)
 	}
 
-	// output(matrix)
-
-	sx, sy := getStart(matrix)
-	nrow := len(matrix)
-	ncol := len(matrix[0])
-
-	valueMatrix := make([][]int, nrow)
-	for i := range valueMatrix {
-		valueMatrix[i] = make([]int, ncol)
+	var startTile *Tile
+	lines := strings.Split(string(b), "\n")
+	slices.Reverse(lines)
+	for row := 0; row < len(lines); row++ {
+		var currentRow []*Tile
+		for column := 0; column < len(lines[row]); column++ {
+			tile := NewTile(row, column, lines[row][column:column+1])
+			if tile.char == "S" {
+				startTile = tile
+			}
+			currentRow = append(currentRow, tile)
+		}
+		tileGrid = append(tileGrid, currentRow)
 	}
 
-	maxScore := 0
-	queue := []Tuple{}
-	queue = enqueue(queue, Tuple{sx, sy, 0})
+	// Do BFS
+	seen := make([][]bool, len(tileGrid))
+	for i := range seen {
+		seen[i] = make([]bool, len(tileGrid[i]))
+	}
+	loop := []*Tile{startTile}
+	seen[startTile.x][startTile.y] = true
 
-	// L R T B
-	dx := []int{0, 0, -1, 1}
-	dy := []int{-1, 1, 0, 0}
-
-	for len(queue) != 0 {
-		cell, deq := dequeue(queue)
-		queue = deq
-
-		x := cell.x
-		y := cell.y
-		val := cell.val
-		valueMatrix[x][y] = val
-		maxScore = max(maxScore, val)
-
-		if matrix[x][y] == "S" {
-			// LRTB
-			nx := x + dx[0]
-			ny := y + dy[0]
-			str := "FL-"
-			if isValid(nx, ny, nrow, ncol) && valueMatrix[nx][ny] == 0 && strings.Contains(str, matrix[nx][ny]) {
-				queue = enqueue(queue, Tuple{nx, ny, val + 1})
-			}
-
-			nx = x + dx[1]
-			ny = y + dy[1]
-			str = "-J7"
-			if isValid(nx, ny, nrow, ncol) && valueMatrix[nx][ny] == 0 && strings.Contains(str, matrix[nx][ny]) {
-				queue = enqueue(queue, Tuple{nx, ny, val + 1})
-			}
-
-			nx = x + dx[2]
-			ny = y + dy[2]
-			str = "|F7"
-			if isValid(nx, ny, nrow, ncol) && valueMatrix[nx][ny] == 0 && strings.Contains(str, matrix[nx][ny]) {
-				queue = enqueue(queue, Tuple{nx, ny, val + 1})
-			}
-
-			nx = x + dx[3]
-			ny = y + dy[3]
-			str = "|LJ"
-			if isValid(nx, ny, nrow, ncol) && valueMatrix[nx][ny] == 0 && strings.Contains(str, matrix[nx][ny]) {
-				queue = enqueue(queue, Tuple{nx, ny, val + 1})
-			}
+	for {
+		top := loop[len(loop)-1]
+		neighbours := findNeighbours(top)
+		if len(neighbours) != 2 {
+			fmt.Printf("Found position with %d neigbours: %v %v\n", len(neighbours), top, neighbours[0])
+			panic("")
 		}
-		if matrix[x][y] == "|" {
-			// T B
-			nx := x + dx[2]
-			ny := y + dy[2]
-			str := "|F7"
-			if isValid(nx, ny, nrow, ncol) && valueMatrix[nx][ny] == 0 && strings.Contains(str, matrix[nx][ny]) {
-				queue = enqueue(queue, Tuple{nx, ny, val + 1})
-			}
 
-			nx = x + dx[3]
-			ny = y + dy[3]
-			str = "|LJ"
-			if isValid(nx, ny, nrow, ncol) && valueMatrix[nx][ny] == 0 && strings.Contains(str, matrix[nx][ny]) {
-				queue = enqueue(queue, Tuple{nx, ny, val + 1})
-			}
+		// Pop every seen neighbour
+		for len(neighbours) > 0 && seen[neighbours[0].x][neighbours[0].y] {
+			neighbours = neighbours[1:]
 		}
-		if matrix[x][y] == "-" {
-			// L R
-			nx := x + dx[0]
-			ny := y + dy[0]
-			str := "FL-"
-			if isValid(nx, ny, nrow, ncol) && valueMatrix[nx][ny] == 0 && strings.Contains(str, matrix[nx][ny]) {
-				queue = enqueue(queue, Tuple{nx, ny, val + 1})
-			}
 
-			nx = x + dx[1]
-			ny = y + dy[1]
-			str = "-J7"
-			if isValid(nx, ny, nrow, ncol) && valueMatrix[nx][ny] == 0 && strings.Contains(str, matrix[nx][ny]) {
-				queue = enqueue(queue, Tuple{nx, ny, val + 1})
-			}
+		if len(neighbours) == 0 {
+			break
 		}
-		if matrix[x][y] == "L" {
-			// T R
-			nx := x + dx[2]
-			ny := y + dy[2]
-			str := "|F7"
-			if isValid(nx, ny, nrow, ncol) && valueMatrix[nx][ny] == 0 && strings.Contains(str, matrix[nx][ny]) {
-				queue = enqueue(queue, Tuple{nx, ny, val + 1})
-			}
 
-			nx = x + dx[1]
-			ny = y + dy[1]
-			str = "-J7"
-			if isValid(nx, ny, nrow, ncol) && valueMatrix[nx][ny] == 0 && strings.Contains(str, matrix[nx][ny]) {
-				queue = enqueue(queue, Tuple{nx, ny, val + 1})
-			}
-		}
-		if matrix[x][y] == "J" {
-			// L T
-			nx := x + dx[0]
-			ny := y + dy[0]
-			str := "FL-"
-			if isValid(nx, ny, nrow, ncol) && valueMatrix[nx][ny] == 0 && strings.Contains(str, matrix[nx][ny]) {
-				queue = enqueue(queue, Tuple{nx, ny, val + 1})
-			}
-
-			nx = x + dx[2]
-			ny = y + dy[2]
-			str = "|F7"
-			if isValid(nx, ny, nrow, ncol) && valueMatrix[nx][ny] == 0 && strings.Contains(str, matrix[nx][ny]) {
-				queue = enqueue(queue, Tuple{nx, ny, val + 1})
-			}
-		}
-		if matrix[x][y] == "7" {
-			// L B
-			nx := x + dx[0]
-			ny := y + dy[0]
-			str := "FL-"
-			if isValid(nx, ny, nrow, ncol) && valueMatrix[nx][ny] == 0 && strings.Contains(str, matrix[nx][ny]) {
-				queue = enqueue(queue, Tuple{nx, ny, val + 1})
-			}
-
-			nx = x + dx[3]
-			ny = y + dy[3]
-			str = "|LJ"
-			if isValid(nx, ny, nrow, ncol) && valueMatrix[nx][ny] == 0 && strings.Contains(str, matrix[nx][ny]) {
-				queue = enqueue(queue, Tuple{nx, ny, val + 1})
-			}
-		}
-		if matrix[x][y] == "F" {
-			// R B
-			nx := x + dx[1]
-			ny := y + dy[1]
-			str := "-J7"
-			if isValid(nx, ny, nrow, ncol) && valueMatrix[nx][ny] == 0 && strings.Contains(str, matrix[nx][ny]) {
-				queue = enqueue(queue, Tuple{nx, ny, val + 1})
-			}
-
-			nx = x + dx[3]
-			ny = y + dy[3]
-			str = "|LJ"
-			if isValid(nx, ny, nrow, ncol) && valueMatrix[nx][ny] == 0 && strings.Contains(str, matrix[nx][ny]) {
-				queue = enqueue(queue, Tuple{nx, ny, val + 1})
-			}
-		}
+		loop = append(loop, neighbours[0])
+		seen[neighbours[0].x][neighbours[0].y] = true
 	}
 
-	// output2(valueMatrix)
-	fmt.Println(maxScore)
-}
+	fmt.Printf("[Part1] Furthest away point is %d Steps away\n", len(loop)/2)
 
-func isValid(nx int, ny int, nrow int, ncol int) bool {
-	return nx >= 0 && nx < nrow && ny >= 0 && ny < ncol
-}
-
-func getStart(matrix [][]string) (int, int) {
-	for i, row := range matrix {
-		for j, col := range row {
-			if col == "S" {
-				return i, j
-			}
+	// A = Area I = Points in Polygon(what we want) R = Points on the Polygon edges
+	// A = I + R/2 - 1
+	// I = A + (-R)/2 + 1
+	sum := 0
+	for i := range loop {
+		n := i + 1
+		if n == len(loop) {
+			n = 0
 		}
+		sum += loop[i].x*loop[n].y - loop[n].x*loop[i].y
 	}
-	return -1, -1
-}
 
-func output(matrix [][]string) {
-	for _, row := range matrix {
-		for _, col := range row {
-			fmt.Printf("%v ", col)
-		}
-		fmt.Println()
-	}
-	fmt.Println()
-}
+	a := int(math.Abs(float64(sum)) / 2)
 
-func output2(matrix [][]int) {
-	for _, row := range matrix {
-		for _, col := range row {
-			fmt.Printf("%v ", col)
-		}
-		fmt.Println()
-	}
-	fmt.Println()
+	pointsInPolygon := a + (len(loop)*-1)/2 + 1
+
+	fmt.Printf("[Part2] Points in Polygon is %d \n", pointsInPolygon)
+
 }
